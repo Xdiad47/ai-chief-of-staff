@@ -1,0 +1,20 @@
+# Environment variables - NEVER commit these
+.env
+*.env
+
+# Google credentials - NEVER commit these
+*.json
+service-account*.json
+application_default_credentials.json
+gcloud/
+
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
