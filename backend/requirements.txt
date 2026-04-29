@@ -1,0 +1,10 @@
+fastapi
+uvicorn[standard]
+pydantic
+pydantic-settings
+google-cloud-firestore
+google-cloud-storage
+firebase-admin
+langchain
+langchain-google-genai
+google-genai
