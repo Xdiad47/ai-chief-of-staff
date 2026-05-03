@@ -20,7 +20,7 @@ _tools = firestore_tools + gmail_tools
 
 performance_agent = LlmAgent(
     name="performance_agent",
-    model="gemini-2.0-flash",
+    model="gemini-2.5-flash",
     tools=_tools,
     description="Specialist agent that tracks employee performance, awards points, checks appraisal eligibility, and sends performance summaries.",
     instruction=(

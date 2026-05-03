@@ -4,19 +4,33 @@ from datetime import datetime
 
 
 class EmployeeCreate(BaseModel):
-    email: EmailStr
-    name: str
-    role: str = Field(..., description="Role: admin or employee")
-    department: str
     company_id: str
-    leave_balance: Dict[str, int] = Field(
-        default={"annual": 20, "sick": 10, "casual": 5}
-    )
+    name: str
+    email: EmailStr
+    password: Optional[str] = None
+    role: Optional[str] = "employee"
+    department: Optional[str] = None
+    position: Optional[str] = None
+    leave_balance: Optional[Dict[str, int]] = None
 
-
-class EmployeeResponse(EmployeeCreate):
+class EmployeeResponse(BaseModel):
     employee_id: str
-    performance_points: int = 0
+    company_id: str
+    name: str
+    email: str
+    role: Optional[str] = "employee"
+    department: Optional[str] = None
+    position: Optional[str] = None
+    performance_points: Optional[int] = 0
+    uid: Optional[str] = None
+    leave_balance: Optional[Dict[str, int]] = None
+
+class EmployeeUpdate(BaseModel):
+    name: Optional[str] = None
+    role: Optional[str] = None
+    department: Optional[str] = None
+    position: Optional[str] = None
+    performance_points: Optional[int] = None
 
 
 class LeaveRequest(BaseModel):

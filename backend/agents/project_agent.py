@@ -20,7 +20,7 @@ _tools = firestore_tools + gmail_tools
 
 project_agent = LlmAgent(
     name="project_agent",
-    model="gemini-2.0-flash",
+    model="gemini-2.5-flash",
     tools=_tools,
     description="Specialist agent that tracks project status, deadlines, and priorities, and sends proactive reminders.",
     instruction=(

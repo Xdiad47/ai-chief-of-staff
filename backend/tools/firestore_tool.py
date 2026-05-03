@@ -59,15 +59,55 @@ def update_leave_balance(company_id: str, employee_id: str, leave_type: str, day
         logger.error(f"Error updating leave balance: {e}")
         return False
 
-def create_leave_request(company_id: str, data: Dict[str, Any]) -> str:
-    """Create a new leave request."""
+def create_leave_request(
+    company_id: str,
+    employee_id: str,
+    leave_type: str,
+    start_date: str,
+    end_date: str,
+    days: int,
+    reason: str,
+) -> str:
+    """
+    Create a new leave request for an employee.
+    Returns a plain success or failure string (no Firestore objects).
+    """
+    from datetime import datetime
+
     try:
         db = get_firestore_client()
-        _, doc_ref = db.collection(f"companies/{company_id}/leave_requests").add(data)
-        return doc_ref.id
+        # Optionally enrich with employee name
+        employee_name = ""
+        try:
+            emp = get_employee(company_id, employee_id)
+            employee_name = emp.get("name", "")
+        except Exception:
+            pass
+
+        # Use datetime.utcnow() — NOT SERVER_TIMESTAMP — so the dict is
+        # fully JSON-serializable and safe for ADK to handle.
+        data = {
+            "employee_id": employee_id,
+            "employee_name": employee_name,
+            "leave_type": leave_type,
+            "start_date": start_date,
+            "end_date": end_date,
+            "days": days,
+            "reason": reason,
+            "status": "pending",
+            "created_at": datetime.utcnow().isoformat(),
+        }
+        db.collection(f"companies/{company_id}/leave_requests").add(data)
+
+        # Return a plain str — no Firestore objects, no doc references.
+        return (
+            f"Leave request submitted successfully. "
+            f"{days} day(s) of {leave_type} leave from {start_date} to {end_date} "
+            f"is now pending admin approval."
+        )
     except Exception as e:
         logger.error(f"Error creating leave request: {e}")
-        return ""
+        return f"Failed to submit leave request: {str(e)}"
 
 def get_leave_requests(company_id: str, employee_id: str) -> List[Dict[str, Any]]:
     """Get leave requests for an employee."""

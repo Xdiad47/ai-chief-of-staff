@@ -29,6 +29,7 @@ export interface Project {
   company_id: string;
   name: string;
   description: string;
+  department?: string;
   status: string;
   priority: string;
   deadline: string;

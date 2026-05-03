@@ -6,5 +6,11 @@ google-cloud-firestore
 google-cloud-storage
 firebase-admin
 langchain
+langchain-community
 langchain-google-genai
+faiss-cpu
+pypdf
 google-genai
+google-adk
+groq
+python-dotenv

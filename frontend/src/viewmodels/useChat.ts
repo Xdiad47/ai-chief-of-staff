@@ -10,7 +10,15 @@ export const useChat = () => {
   const { user } = useAuth();
 
   const sendMessage = async (content: string) => {
-    if (!content.trim() || !user?.companyId || !user?.employeeId) return;
+    console.log("Sending message:", content);
+    if (!content.trim() || !user?.companyId || !user?.employeeId) {
+      console.error("Cannot send message. Missing data:", { 
+        content: !!content.trim(), 
+        companyId: user?.companyId, 
+        employeeId: user?.employeeId 
+      });
+      return;
+    }
 
     const userMessage: ChatMessage = {
       id: Date.now().toString(),

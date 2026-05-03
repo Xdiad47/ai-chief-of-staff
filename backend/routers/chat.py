@@ -4,6 +4,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import logging
 import time
+import traceback
 from collections import defaultdict
 from fastapi import APIRouter, HTTPException
 from models.employee import ChatMessage, ChatResponse
@@ -61,5 +62,5 @@ async def chat(body: ChatMessage):
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Chat endpoint error for employee {body.employee_id}: {e}")
+        logger.error(f"Chat endpoint error for employee {body.employee_id}: {e}\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail="Failed to process your message. Please try again.")

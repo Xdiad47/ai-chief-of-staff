@@ -16,7 +16,7 @@ export default function Home() {
       } else if (user.role === 'admin') {
         router.push('/dashboard');
       } else {
-        router.push('/chat');
+        router.push('/home');
       }
     }
   }, [user, loading, router]);

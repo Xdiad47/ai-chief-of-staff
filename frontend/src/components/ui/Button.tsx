@@ -35,7 +35,7 @@ export const Button: React.FC<ButtonProps> = ({
 
   return (
     <button className={classes} disabled={disabled || loading} {...props}>
-      {loading && <LoadingSpinner size="sm" className="mr-2" />}
+      {loading && <LoadingSpinner size="sm" className="mr-2 text-white" />}
       {children}
     </button>
   );

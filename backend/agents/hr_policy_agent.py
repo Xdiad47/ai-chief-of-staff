@@ -5,31 +5,25 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import logging
 from dotenv import load_dotenv
 from google.adk.agents import LlmAgent
-from tools.firestore_tool import all_tools as firestore_tools
-from tools.storage_tool import all_tools as storage_tools
+from tools.rag_tool import query_policy_tool
 
-# Load environment variables
 load_dotenv()
 
-# Setup logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Combine all tools needed by this agent
-_tools = firestore_tools + storage_tools
-
 hr_policy_agent = LlmAgent(
     name="hr_policy_agent",
-    model="gemini-2.0-flash",
-    tools=_tools,
+    model="gemini-2.5-flash",
+    tools=[query_policy_tool],
     description="Specialist agent that answers employee questions about company policies, rules, regulations, benefits, and procedures.",
     instruction=(
-        "You are the HR Policy Agent. "
-        "You answer employee questions about company policies, rules, regulations, benefits, and procedures. "
-        "When asked a question: "
-        "1) Retrieve the relevant policy document using get_policy_text, "
-        "2) Answer based strictly on the company's uploaded policy documents, "
-        "3) If information is not found in the policy, clearly say so and suggest contacting HR directly. "
-        "Never make up policies. Always cite which policy document your answer comes from."
+        "You are the HR Policy Assistant. When an employee asks "
+        "about company policies, leave rules, benefits, or "
+        "conduct guidelines — use the query_hr_policy tool with "
+        "the company_id from context and the employee's question. "
+        "Always cite which policy document your answer comes from. "
+        "If no policy is found, tell the employee that no policy "
+        "document has been uploaded yet."
     ),
 )

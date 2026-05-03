@@ -31,7 +31,7 @@ _all_tools = (
 
 orchestrator = LlmAgent(
     name="orchestrator",
-    model="gemini-2.0-flash",
+    model="gemini-2.5-flash",
     tools=_all_tools,
     sub_agents=[leave_agent, performance_agent, hr_policy_agent, project_agent],
     description="Master orchestrator agent — the AI Chief of Staff that understands employee requests and routes them to the right specialist agent.",
