@@ -78,23 +78,14 @@ export default function TasksPage() {
         return;
       }
 
-      // Suggest points when task is marked done
-      if (newStatus === "done") {
-        try {
-          const pointsRes = await fetch(
-            `/api/employee/${user!.companyId}/${user!.employeeId}/tasks/${task_id}/suggest-points`,
-            { method: "POST", headers }
-          );
-          if (pointsRes.ok) {
-            const { suggested_points, reason } = await pointsRes.json();
-            toast(`🎉 Task completed! AI suggests ${suggested_points} points — ${reason}.`, {
-              duration: 5000,
-              style: { background: "#f0fdf4", border: "1px solid #bbf7d0", color: "#166534" },
-            });
-          }
-        } catch {
-          // Non-blocking — status update already succeeded
-        }
+      const responseData = await res.json();
+
+      // Show awarded points when task is marked done
+      if (newStatus === "done" && responseData.points_awarded) {
+        toast(`🎉 Task completed! You earned ${responseData.points_awarded} points.`, {
+          duration: 5000,
+          style: { background: "#f0fdf4", border: "1px solid #bbf7d0", color: "#166534" },
+        });
       }
     } catch {
       // Silently fail

@@ -98,6 +98,7 @@ async def apply_leave(
     Submits a leave request with status 'pending'. Balance is deducted only on admin approval.
     leave_type must be: annual | casual | sick
     """
+    leave_type = leave_type.lower()   # normalise before validation
     valid_types = {"annual", "casual", "sick"}
     if leave_type not in valid_types:
         raise HTTPException(
@@ -164,11 +165,13 @@ async def get_tasks(company_id: str, employee_id: str) -> Dict[str, Any]:
             d["task_id"] = doc.id
             tasks.append(d)
 
-        open_count = len([t for t in tasks if t.get("status", "open") == "open"])
+        open_count   = len([t for t in tasks if t.get("status") == "open"])
+        active_count = len([t for t in tasks if t.get("status") in ("open", "in_progress")])
 
         return {
             "tasks": tasks,
             "open_count": open_count,
+            "active_count": active_count,
             "total_count": len(tasks),
         }
     except Exception as e:
@@ -192,9 +195,38 @@ async def update_task_status(
         task_ref = db.collection(
             f"companies/{company_id}/employees/{employee_id}/tasks"
         ).document(task_id)
-        if not task_ref.get().exists:
+        
+        task_doc = task_ref.get()
+        if not task_doc.exists:
             raise HTTPException(status_code=404, detail="Task not found")
+            
         task_ref.update({"status": status})
+        
+        if status == "done":
+            task_data = task_doc.to_dict() or {}
+            priority = task_data.get("priority", "medium").lower()
+            title = task_data.get("title", "Unknown Task")
+            
+            points_awarded = {"low": 10, "medium": 25, "high": 50}.get(priority, 25)
+            
+            # Increment employee's performance_points
+            emp_ref = db.collection(f"companies/{company_id}/employees").document(employee_id)
+            emp_ref.update({
+                "performance_points": firestore.Increment(points_awarded)
+            })
+            
+            # Write a points_history entry
+            db.collection(f"companies/{company_id}/employees/{employee_id}/points_history").add({
+                "points": points_awarded,
+                "reason": f"Task completed: {title}",
+                "awarded_at": firestore.SERVER_TIMESTAMP
+            })
+            
+            return {
+                "message": "Task status updated to done",
+                "points_awarded": points_awarded
+            }
+
         return {"message": f"Task status updated to {status}"}
     except HTTPException:
         raise

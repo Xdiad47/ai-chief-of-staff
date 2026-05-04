@@ -378,7 +378,7 @@ async def approve_leave(company_id: str, leave_id: str):
             raise HTTPException(status_code=400, detail="Leave request is not pending")
 
         employee_id = leave_data["employee_id"]
-        leave_type = leave_data["leave_type"]
+        leave_type = leave_data["leave_type"].lower()   # normalise case (agent may send "Casual")
         days = leave_data["days"]
 
         emp_ref = db.collection(f"companies/{company_id}/employees").document(employee_id)
