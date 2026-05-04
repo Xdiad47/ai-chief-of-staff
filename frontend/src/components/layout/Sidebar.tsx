@@ -4,12 +4,17 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '../../lib/auth-context';
-import { LayoutDashboard, Users, Upload, MessageSquare, LogOut, Building2, Calendar, CheckSquare, Star, FolderOpen, Home, ListChecks } from 'lucide-react';
+import { LayoutDashboard, Users, Upload, MessageSquare, LogOut, Building2, Calendar, CheckSquare, Star, FolderOpen, Home, ListChecks, X } from 'lucide-react';
 import { employeeService } from '../../services/employeeService';
 import { Employee } from '../../types';
 import { getAuth } from 'firebase/auth';
 
-export const Sidebar = () => {
+interface SidebarProps {
+  isOpen?: boolean;
+  onClose?: () => void;
+}
+
+export const Sidebar = ({ isOpen = false, onClose }: SidebarProps) => {
   const pathname = usePathname();
   const { user, logout } = useAuth();
   const [profile, setProfile] = useState<Employee | null>(null);
@@ -36,7 +41,7 @@ export const Sidebar = () => {
         );
         if (res.ok) {
           const data = await res.json();
-          setOpenTaskCount(data.total_count ?? 0);
+          setOpenTaskCount(data.active_count ?? 0);
         }
       } catch (e) {
         console.error("Failed to fetch task count", e);
@@ -64,16 +69,32 @@ export const Sidebar = () => {
   const links = isAdmin ? adminLinks : employeeLinks;
 
   return (
-    <div className="w-64 bg-gray-900 text-white h-screen flex flex-col fixed left-0 top-0 overflow-y-auto scrollbar-none">
-      <div className="p-6 border-b border-gray-800 flex items-center space-x-3">
-        <div className="p-2 bg-brand-600 rounded-lg">
-          <Building2 className="w-6 h-6 text-white" />
+    <>
+      {/* Mobile Backdrop */}
+      {isOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          onClick={onClose}
+        />
+      )}
+
+      {/* Sidebar */}
+      <div className={`w-64 bg-gray-900 text-white h-screen flex flex-col fixed left-0 top-0 overflow-y-auto scrollbar-none z-50 transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}>
+        <div className="p-6 border-b border-gray-800 flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="p-2 bg-brand-600 rounded-lg">
+              <Building2 className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h1 className="text-sm font-bold tracking-wider">AI CHIEF OF STAFF</h1>
+              <span className="text-xs text-brand-300 uppercase">{user?.role}</span>
+            </div>
+          </div>
+          {/* Close button for mobile */}
+          <button onClick={onClose} className="md:hidden text-gray-400 hover:text-white">
+            <X className="w-6 h-6" />
+          </button>
         </div>
-        <div>
-          <h1 className="text-sm font-bold tracking-wider">AI CHIEF OF STAFF</h1>
-          <span className="text-xs text-brand-300 uppercase">{user?.role}</span>
-        </div>
-      </div>
       
       {!isAdmin && profile && (
         <div className="px-4 pt-6 pb-2 border-b border-gray-800">
@@ -101,7 +122,9 @@ export const Sidebar = () => {
                 <span>Leaves</span>
               </div>
               {/* @ts-ignore */}
-              <span className="text-sm font-bold text-white">{profile.leave_balance?.annual || 12}</span>
+              <span className="text-sm font-bold text-white">
+                {(profile.leave_balance?.annual || 0) + (profile.leave_balance?.sick || 0) + (profile.leave_balance?.casual || 0)}
+              </span>
             </div>
             <div className="flex justify-between items-center">
               <div className="flex items-center space-x-2 text-xs text-gray-300">
@@ -146,5 +169,6 @@ export const Sidebar = () => {
         </button>
       </div>
     </div>
+    </>
   );
 };

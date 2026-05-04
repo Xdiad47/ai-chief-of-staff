@@ -85,6 +85,13 @@ export default function LoginPage() {
             Sign In
           </Button>
         </form>
+
+        <p className="text-center text-sm text-gray-500 mt-6">
+          Don&apos;t have an account?{' '}
+          <a href="/register" className="text-brand-600 hover:text-brand-700 font-semibold">
+            Start Free Trial →
+          </a>
+        </p>
       </Card>
     </div>
   );
