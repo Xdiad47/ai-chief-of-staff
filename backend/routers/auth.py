@@ -24,7 +24,21 @@ router = APIRouter()
 
 # Initialise Firebase Admin SDK (idempotent guard)
 if not firebase_admin._apps:
-    firebase_admin.initialize_app()
+    firebase_project_id = os.getenv("FIREBASE_PROJECT_ID")
+    firebase_private_key = os.getenv("FIREBASE_PRIVATE_KEY")
+    firebase_client_email = os.getenv("FIREBASE_CLIENT_EMAIL")
+
+    if firebase_project_id and firebase_private_key and firebase_client_email:
+        cred = credentials.Certificate({
+            "type": "service_account",
+            "project_id": firebase_project_id,
+            "private_key": firebase_private_key.replace("\\n", "\n"),
+            "client_email": firebase_client_email,
+            "token_uri": "https://oauth2.googleapis.com/token",
+        })
+        firebase_admin.initialize_app(cred)
+    else:
+        firebase_admin.initialize_app()
 
 
 # ── Gmail SMTP config (fastapi-mail) ─────────────────────────────────────────

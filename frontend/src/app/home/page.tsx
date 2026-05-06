@@ -38,9 +38,9 @@ export default function HomePage() {
 
         const headers = { Authorization: `Bearer ${token}` };
         const [taskRes, leaveRes, profileRes] = await Promise.all([
-          fetch(`/api/employee/${user.companyId}/${user.employeeId}/tasks`, { headers }),
-          fetch(`/api/employee/${user.companyId}/${user.employeeId}/leave-balance`, { headers }),
-          fetch(`/api/employee/${user.companyId}/${user.employeeId}/profile`, { headers }),
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/employee/${user.companyId}/${user.employeeId}/tasks`, { headers }),
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/employee/${user.companyId}/${user.employeeId}/leave-balance`, { headers }),
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/employee/${user.companyId}/${user.employeeId}/profile`, { headers }),
         ]);
 
         if (taskRes.ok) {

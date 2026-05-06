@@ -45,7 +45,7 @@ export default function TasksPage() {
         const token = await auth.currentUser?.getIdToken();
         if (!token) { setError("Not authenticated"); return; }
         const res = await fetch(
-          `/api/employee/${user!.companyId}/${user!.employeeId}/tasks`,
+          `${process.env.NEXT_PUBLIC_API_URL}/api/employee/${user!.companyId}/${user!.employeeId}/tasks`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         if (!res.ok) throw new Error("Failed to load tasks");
@@ -70,7 +70,7 @@ export default function TasksPage() {
       const headers = { Authorization: `Bearer ${token}` };
 
       const res = await fetch(
-        `/api/employee/${user!.companyId}/${user!.employeeId}/tasks/${task_id}?status=${newStatus}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/employee/${user!.companyId}/${user!.employeeId}/tasks/${task_id}?status=${newStatus}`,
         { method: "PATCH", headers }
       );
       if (!res.ok) {

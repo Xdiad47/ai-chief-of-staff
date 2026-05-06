@@ -36,7 +36,7 @@ export const Sidebar = ({ isOpen = false, onClose }: SidebarProps) => {
         const token = await auth.currentUser?.getIdToken();
         if (!token) return;
         const res = await fetch(
-          `/api/employee/${user.companyId}/${user.employeeId}/tasks`,
+          `${process.env.NEXT_PUBLIC_API_URL}/api/employee/${user.companyId}/${user.employeeId}/tasks`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         if (res.ok) {

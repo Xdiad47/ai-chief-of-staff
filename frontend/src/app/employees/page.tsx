@@ -59,7 +59,7 @@ function AssignTaskModal({ employee, companyId, onClose, onSuccess }: AssignTask
     try {
       setSaving(true);
       const res = await fetch(
-        `/api/admin/employees/${companyId}/${employee.employee_id}/tasks`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/employees/${companyId}/${employee.employee_id}/tasks`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -255,7 +255,7 @@ function AwardPointsModal({ employee, companyId, onClose, onSuccess }: AwardPoin
     try {
       setSaving(true);
       const res = await fetch(
-        `/api/admin/employees/${companyId}/${employee.employee_id}/points`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/employees/${companyId}/${employee.employee_id}/points`,
         {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },

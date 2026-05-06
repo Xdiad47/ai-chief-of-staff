@@ -37,7 +37,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           let role = verifyRes.role as 'admin' | 'employee';
           if (!role || role === 'employee') {
             // Check if this email matches any company admin_email
-            const res = await fetch(`/api/auth/role-check?email=${firebaseUser.email}`);
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/role-check?email=${firebaseUser.email}`);
             if (res.ok) {
               const data = await res.json();
               role = data.role || 'employee';

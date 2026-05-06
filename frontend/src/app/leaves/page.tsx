@@ -63,7 +63,7 @@ export default function LeavesPage() {
       const token = await auth.currentUser?.getIdToken();
       if (!token) { setError("Not authenticated"); return; }
       const res = await fetch(
-        `/api/employee/${user!.companyId}/${user!.employeeId}/leave-balance`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/employee/${user!.companyId}/${user!.employeeId}/leave-balance`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       if (!res.ok) throw new Error("Failed to load leave data");
@@ -91,7 +91,7 @@ export default function LeavesPage() {
         reason: form.reason,
       });
       const res = await fetch(
-        `/api/employee/${user!.companyId}/${user!.employeeId}/leaves/apply?${params}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/employee/${user!.companyId}/${user!.employeeId}/leaves/apply?${params}`,
         { method: "POST", headers: { Authorization: `Bearer ${token}` } }
       );
       const data = await res.json();
