@@ -1,15 +1,13 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Static export for Firebase Hosting
   output: 'export',
-
-  // Skip type/lint checks during build
-  typescript: {
-    ignoreBuildErrors: true,
-  },
+  trailingSlash: true,
+  images: { unoptimized: true },
   eslint: {
     ignoreDuringBuilds: true,
   },
+  typescript: {
+    ignoreBuildErrors: true,
+  }
 };
-
 export default nextConfig;

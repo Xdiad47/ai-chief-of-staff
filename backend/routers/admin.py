@@ -112,6 +112,23 @@ async def add_employee(body: EmployeeCreate):
         raise HTTPException(status_code=500, detail="Failed to add employee.")
 
 
+@router.get("/company/{company_id}")
+async def get_company_info(company_id: str):
+    """Return company name and logo URL."""
+    try:
+        db = get_db()
+        doc = db.collection("companies").document(company_id).get()
+        if not doc.exists:
+            raise HTTPException(status_code=404, detail="Company not found.")
+        data = doc.to_dict()
+        return {"name": data.get("name", ""), "logo_url": data.get("logo_url", "")}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Get company info failed: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch company info.")
+
+
 @router.get("/employees/{company_id}", response_model=List[EmployeeResponse])
 async def get_employees(company_id: str):
     """Return all employees for a company."""

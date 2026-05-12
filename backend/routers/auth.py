@@ -292,11 +292,9 @@ async def register(
             raise HTTPException(status_code=400, detail="Logo file must be under 5MB.")
 
         bucket = firebase_storage.bucket(bucket_name)
-        blob_path = f"companies/{company_id}/logo.png"
-        blob = bucket.blob(blob_path)
+        blob = bucket.blob(f"companies/{company_id}/logo.png")
         blob.upload_from_string(logo_bytes, content_type=logo.content_type or "image/png")
-        blob.make_public()
-        logo_url = blob.public_url
+        logo_url = f"https://storage.googleapis.com/ai-chief-of-staff-policies/companies/{company_id}/logo.png"
 
         # ── 4. Create Firebase Auth user ──────────────────────────────────────
         try:
@@ -363,6 +361,11 @@ async def register(
         raise
     except Exception as e:
         logger.error(f"Registration failed: {e}", exc_info=True)
+        # Reset OTP so the user can retry without requesting a new code
+        try:
+            db.collection("otp_store").document(email).update({"verified": False})
+        except Exception:
+            pass
         raise HTTPException(status_code=500, detail=f"Registration failed: {str(e)}")
 
 

@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '../../lib/auth-context';
 import { LayoutDashboard, Users, Upload, MessageSquare, LogOut, Building2, Calendar, CheckSquare, Star, FolderOpen, Home, ListChecks, X } from 'lucide-react';
@@ -19,6 +20,7 @@ export const Sidebar = ({ isOpen = false, onClose }: SidebarProps) => {
   const { user, logout } = useAuth();
   const [profile, setProfile] = useState<Employee | null>(null);
   const [openTaskCount, setOpenTaskCount] = useState<number>(0);
+  const [company, setCompany] = useState<{ name: string; logo_url: string } | null>(null);
 
   useEffect(() => {
     if (user?.role === 'employee' && user?.companyId && user?.employeeId) {
@@ -27,6 +29,14 @@ export const Sidebar = ({ isOpen = false, onClose }: SidebarProps) => {
         .catch(err => console.error("Failed to fetch profile", err));
     }
   }, [user]);
+
+  useEffect(() => {
+    if (!user?.companyId) return;
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/company/${user.companyId}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data) setCompany(data); })
+      .catch(() => {});
+  }, [user?.companyId]);
 
   useEffect(() => {
     if (!user?.companyId || !user?.employeeId) return;
@@ -82,11 +92,15 @@ export const Sidebar = ({ isOpen = false, onClose }: SidebarProps) => {
       <div className={`w-64 bg-gray-900 text-white h-screen flex flex-col fixed left-0 top-0 overflow-y-auto scrollbar-none z-50 transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}>
         <div className="p-6 border-b border-gray-800 flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="p-2 bg-brand-600 rounded-lg">
-              <Building2 className="w-6 h-6 text-white" />
+            <div className="w-10 h-10 rounded-lg overflow-hidden bg-brand-600 flex items-center justify-center shrink-0">
+              {company?.logo_url ? (
+                <Image src={company.logo_url} alt="logo" width={40} height={40} className="object-cover w-full h-full" unoptimized />
+              ) : (
+                <Building2 className="w-6 h-6 text-white" />
+              )}
             </div>
-            <div>
-              <h1 className="text-sm font-bold tracking-wider">AI CHIEF OF STAFF</h1>
+            <div className="min-w-0">
+              <h1 className="text-sm font-bold tracking-wider truncate">{company?.name || 'AI CHIEF OF STAFF'}</h1>
               <span className="text-xs text-brand-300 uppercase">{user?.role}</span>
             </div>
           </div>

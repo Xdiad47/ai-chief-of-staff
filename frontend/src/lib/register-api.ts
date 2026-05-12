@@ -4,7 +4,7 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
  * Send a 6-digit OTP to the given email address.
  */
 export async function sendOtp(email: string): Promise<{ message: string }> {
-  const res = await fetch(`${API_BASE}/auth/send-otp`, {
+  const res = await fetch(`${API_BASE}/api/auth/send-otp`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email }),
@@ -24,7 +24,7 @@ export async function verifyOtp(
   email: string,
   otp: string
 ): Promise<{ verified: boolean }> {
-  const res = await fetch(`${API_BASE}/auth/verify-otp`, {
+  const res = await fetch(`${API_BASE}/api/auth/verify-otp`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, otp }),
@@ -44,7 +44,7 @@ export async function verifyOtp(
 export async function registerCompany(
   formData: FormData
 ): Promise<{ success: boolean; company_id: string; trial_ends_at: string }> {
-  const res = await fetch(`${API_BASE}/auth/register`, {
+  const res = await fetch(`${API_BASE}/api/auth/register`, {
     method: 'POST',
     body: formData, // Let the browser set the Content-Type + boundary automatically
   });
