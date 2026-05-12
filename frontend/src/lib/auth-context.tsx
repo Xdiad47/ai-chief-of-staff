@@ -55,13 +55,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             displayName: firebaseUser.displayName || undefined,
           });
 
-          // Redirect based on role
-          if (role === 'admin') {
-            console.log('➡️ Redirecting to /dashboard');
-            router.push('/dashboard');
-          } else {
-            console.log('➡️ Redirecting to /chat');
-            router.push('/chat');
+          // Only redirect from gateway pages — never override in-app navigation
+          const path = window.location.pathname.replace(/\/$/, '') || '/';
+          const isGateway = ['/', '/login', '/register'].includes(path);
+          if (isGateway) {
+            if (role === 'admin') {
+              router.push('/dashboard');
+            } else {
+              router.push('/chat');
+            }
           }
 
         } catch (error) {
