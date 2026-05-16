@@ -55,6 +55,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             displayName: firebaseUser.displayName || undefined,
           });
 
+          // Check trial status — redirect to /expired if trial has ended
+          if (companyId) {
+            try {
+              const trialRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/trial-status/${companyId}`);
+              if (trialRes.ok) {
+                const trialData = await trialRes.json();
+                if (!trialData.active) {
+                  router.push('/expired');
+                  setLoading(false);
+                  return;
+                }
+              }
+            } catch {
+              // non-blocking — let user through if check fails
+            }
+          }
+
           // Only redirect from gateway pages — never override in-app navigation
           const path = window.location.pathname.replace(/\/$/, '') || '/';
           const isGateway = ['/', '/login', '/register'].includes(path);

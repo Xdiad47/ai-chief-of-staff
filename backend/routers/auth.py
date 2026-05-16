@@ -316,7 +316,7 @@ async def register(
 
         # ── 6. Create company Firestore document ──────────────────────────────
         now_utc = datetime.now(timezone.utc)
-        trial_ends_at = now_utc + timedelta(days=5)
+        trial_ends_at = now_utc + timedelta(days=15)
 
         db.collection("companies").document(company_id).set({
             "name": company_name,
@@ -406,3 +406,100 @@ async def check_trial_status(company_id: str) -> dict:
     except Exception as e:
         logger.error(f"check_trial_status failed: {e}")
         return {"active": False, "reason": "error"}
+
+
+# ── Expose trial status as HTTP endpoint ──────────────────────────────────────
+
+@router.get("/trial-status/{company_id}")
+async def get_trial_status(company_id: str):
+    return await check_trial_status(company_id)
+
+
+# ── Feedback from expired trial users ─────────────────────────────────────────
+
+class FeedbackRequest(BaseModel):
+    company_name: str
+    contact_email: str
+    rating: int          # 1-5
+    liked: str
+    improve: str
+    want_to_continue: bool
+
+OWNER_EMAIL = os.getenv("MAIL_FROM", "rohannth94@gmail.com")
+
+@router.post("/feedback")
+async def submit_feedback(body: FeedbackRequest):
+    """Receives feedback from an expired trial company and emails it to the owner."""
+    try:
+        mail_user = os.getenv("MAIL_USERNAME")
+        mail_pass = os.getenv("MAIL_PASSWORD")
+        mail_from = os.getenv("MAIL_FROM")
+        mail_server = os.getenv("MAIL_SERVER", "smtp.gmail.com")
+        mail_port = int(os.getenv("MAIL_PORT", 587))
+
+        if not all([mail_user, mail_pass, mail_from]):
+            raise HTTPException(status_code=500, detail="SMTP not configured")
+
+        conf = ConnectionConfig(
+            MAIL_USERNAME=mail_user,
+            MAIL_PASSWORD=mail_pass,
+            MAIL_FROM=mail_from,
+            MAIL_SERVER=mail_server,
+            MAIL_PORT=mail_port,
+            MAIL_STARTTLS=True,
+            MAIL_SSL_TLS=False,
+            USE_CREDENTIALS=True,
+        )
+
+        stars = "★" * body.rating + "☆" * (5 - body.rating)
+        wants = "YES — wants to continue" if body.want_to_continue else "No"
+
+        email_body = f"""
+New trial feedback received via AI Chief of Staff.
+
+Company:        {body.company_name}
+Contact email:  {body.contact_email}
+Rating:         {stars} ({body.rating}/5)
+Want to continue: {wants}
+
+What they liked:
+{body.liked}
+
+What to improve:
+{body.improve}
+"""
+        message = MessageSchema(
+            subject=f"Trial Feedback — {body.company_name} ({body.rating}/5)",
+            recipients=[OWNER_EMAIL],
+            body=email_body.strip(),
+            subtype="plain",
+        )
+        fm = FastMail(conf)
+        await fm.send_message(message)
+        return {"success": True}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"submit_feedback error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ── Manually extend a company's trial (owner use only) ────────────────────────
+
+@router.post("/extend-trial/{company_id}")
+async def extend_trial(company_id: str, days: int = 15):
+    """
+    Extend (or reset) a company's trial by N days from today.
+    Call this manually after agreeing with the customer.
+    """
+    try:
+        db = firestore.Client()
+        new_end = datetime.now(timezone.utc) + timedelta(days=days)
+        db.collection("companies").document(company_id).update({
+            "plan": "trial",
+            "trial_ends_at": new_end,
+        })
+        return {"company_id": company_id, "trial_ends_at": new_end.isoformat(), "days_extended": days}
+    except Exception as e:
+        logger.error(f"extend_trial error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
