@@ -8,6 +8,12 @@
 
 ---
 
+## 🏗️ Architecture Diagram
+
+![AI HR SaaS Architecture](Architecture%20diagram/ai_hr_saas_architecture.svg)
+
+---
+
 ## 🚀 Features
 
 - **AI Agents** — Autonomous agents for task assignment, performance evaluation, and workforce decisions
@@ -44,6 +50,8 @@
 
 ```
 ai-chief-of-staff/
+├── Architecture diagram/
+│   └── ai_hr_saas_architecture.svg   # System architecture diagram
 ├── backend/          # FastAPI backend (Python)
 │   ├── agents/       # AI agent implementations
 │   ├── routers/      # API route handlers
