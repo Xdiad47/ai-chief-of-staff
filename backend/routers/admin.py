@@ -3,12 +3,14 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import logging
+from datetime import date, datetime
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Request
-from typing import List
+from typing import List, Optional
 from google.cloud import firestore
 from firebase_admin import auth as firebase_auth
 from models.employee import EmployeeCreate, EmployeeResponse, ProjectModel
 from tools.storage_tool import upload_policy_pdf
+from services.reminder_service import run_task_reminders_for_company
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -19,6 +21,34 @@ router = APIRouter()
 
 def get_db() -> firestore.Client:
     return firestore.Client()
+
+
+def _parse_due_date(raw_due_date: object) -> Optional[date]:
+    """Parse task due date values from Firestore to a date, if possible."""
+    if not raw_due_date:
+        return None
+
+    if isinstance(raw_due_date, datetime):
+        return raw_due_date.date()
+    if isinstance(raw_due_date, date):
+        return raw_due_date
+    if isinstance(raw_due_date, str):
+        text = raw_due_date.strip()
+        if not text:
+            return None
+
+        # Common UI value from <input type=\"date\">: YYYY-MM-DD
+        try:
+            return date.fromisoformat(text)
+        except ValueError:
+            pass
+
+        # Fallback for timestamp-like strings
+        try:
+            return datetime.fromisoformat(text.replace("Z", "+00:00")).date()
+        except ValueError:
+            return None
+    return None
 
 
 # ── Policy Upload ─────────────────────────────────────────────────────────────
@@ -473,4 +503,30 @@ async def reject_leave(company_id: str, leave_id: str):
         raise
     except Exception as e:
         logger.error(f"reject_leave error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ── Task Reminders ────────────────────────────────────────────────────────────
+
+@router.post("/{company_id}/tasks/send-overdue-reminders")
+async def send_overdue_task_reminders(company_id: str):
+    """
+    Trigger the 3-phase smart task reminder for one company:
+      T-1  → "due tomorrow" warning (sent once per task)
+      T    → "due today" reminder (sent once per task)
+      T+   → "overdue, bonus forfeited" final notice (sent once per task, permanent)
+
+    Each phase is tracked by a boolean flag on the Firestore task document
+    so it is never re-sent.
+    """
+    try:
+        db = get_db()
+        result = await run_task_reminders_for_company(company_id, db)
+        if "skipped" in result:
+            raise HTTPException(status_code=500, detail=result["skipped"])
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"send_overdue_task_reminders error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
