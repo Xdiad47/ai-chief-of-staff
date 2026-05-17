@@ -9,7 +9,7 @@ from typing import List, Optional
 from google.cloud import firestore
 from firebase_admin import auth as firebase_auth
 from models.employee import EmployeeCreate, EmployeeResponse, ProjectModel
-from tools.storage_tool import upload_policy_pdf
+from tools.storage_tool import upload_policy_pdf, generate_signed_url_for_path
 from services.reminder_service import run_task_reminders_for_company
 from dotenv import load_dotenv
 
@@ -97,9 +97,14 @@ async def list_policies(company_id: str):
         for doc in docs:
             d = doc.to_dict() or {}
             d["policy_id"] = doc.id
-            # Convert Firestore timestamp to ISO string if present
             if "uploaded_at" in d and hasattr(d["uploaded_at"], "isoformat"):
                 d["uploaded_at"] = d["uploaded_at"].isoformat()
+            # Always regenerate a fresh signed URL so it never expires
+            gcs_path = d.get("gcs_path", "")
+            if gcs_path:
+                fresh_url = generate_signed_url_for_path(gcs_path)
+                if fresh_url:
+                    d["signed_url"] = fresh_url
             results.append(d)
         # Sort newest first
         results.sort(key=lambda x: x.get("uploaded_at", ""), reverse=True)

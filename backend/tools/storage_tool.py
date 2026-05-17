@@ -53,6 +53,23 @@ def get_policy_text(company_id: str, filename: str) -> str:
     except Exception as e:
         logger.error(f"Error fetching policy text: {e}")
         return ""
+def generate_signed_url_for_path(gcs_path: str) -> str:
+    """Generate a fresh signed URL for an existing GCS object (7-day expiry)."""
+    try:
+        client = get_storage_client()
+        blob = client.bucket(BUCKET_NAME).blob(gcs_path)
+        if os.path.exists(SERVICE_ACCOUNT_FILE):
+            signing_credentials = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE)
+            return blob.generate_signed_url(
+                expiration=datetime.timedelta(days=7),
+                version="v4",
+                credentials=signing_credentials,
+            )
+        return f"gs://{BUCKET_NAME}/{gcs_path}"
+    except Exception as e:
+        logger.error(f"Error generating signed URL for {gcs_path}: {e}")
+        return ""
+
 upload_policy_pdf_tool = FunctionTool(upload_policy_pdf)
 get_policy_text_tool = FunctionTool(get_policy_text)
 all_tools = [upload_policy_pdf_tool, get_policy_text_tool]
