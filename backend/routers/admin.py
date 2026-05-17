@@ -76,6 +76,7 @@ async def upload_policy(
             "file_type": file.content_type,
             "signed_url": signed_url,
             "gcs_path": f"{company_id}/{file.filename}",
+            "uploaded_at": firestore.SERVER_TIMESTAMP,
         })
 
         return {"filename": file.filename, "signed_url": signed_url, "message": "Policy uploaded successfully."}
@@ -84,6 +85,28 @@ async def upload_policy(
     except Exception as e:
         logger.error(f"Policy upload failed: {e}")
         raise HTTPException(status_code=500, detail="Policy upload failed.")
+
+
+@router.get("/policies/{company_id}")
+async def list_policies(company_id: str):
+    """Return all uploaded policy documents for a company."""
+    try:
+        db = get_db()
+        docs = db.collection(f"companies/{company_id}/policies").stream()
+        results = []
+        for doc in docs:
+            d = doc.to_dict() or {}
+            d["policy_id"] = doc.id
+            # Convert Firestore timestamp to ISO string if present
+            if "uploaded_at" in d and hasattr(d["uploaded_at"], "isoformat"):
+                d["uploaded_at"] = d["uploaded_at"].isoformat()
+            results.append(d)
+        # Sort newest first
+        results.sort(key=lambda x: x.get("uploaded_at", ""), reverse=True)
+        return results
+    except Exception as e:
+        logger.error(f"list_policies error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch policies.")
 
 
 # ── Employee Management ───────────────────────────────────────────────────────
@@ -378,6 +401,32 @@ async def assign_task(company_id: str, employee_id: str, request: Request):
         raise
     except Exception as e:
         logger.error(f"assign_task error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/employees/{company_id}/{employee_id}/tasks")
+async def get_employee_tasks(company_id: str, employee_id: str):
+    """Return all tasks for a specific employee."""
+    try:
+        db = get_db()
+        emp_ref = db.collection(f"companies/{company_id}/employees").document(employee_id)
+        if not emp_ref.get().exists:
+            raise HTTPException(status_code=404, detail="Employee not found")
+
+        tasks = []
+        for doc in emp_ref.collection("tasks").stream():
+            t = doc.to_dict() or {}
+            t["task_id"] = doc.id
+            if "created_at" in t and hasattr(t["created_at"], "isoformat"):
+                t["created_at"] = t["created_at"].isoformat()
+            tasks.append(t)
+
+        tasks.sort(key=lambda x: x.get("due_date", ""), reverse=False)
+        return tasks
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"get_employee_tasks error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 

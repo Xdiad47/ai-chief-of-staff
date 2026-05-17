@@ -41,6 +41,14 @@ export const adminService = {
     });
     return res.data;
   },
+  getPolicies: async (companyId: string): Promise<Policy[]> => {
+    const res = await api.get(`/api/admin/policies/${companyId}`);
+    return res.data;
+  },
+  getEmployeeTasks: async (companyId: string, employeeId: string): Promise<EmployeeTask[]> => {
+    const res = await api.get(`/api/admin/employees/${companyId}/${employeeId}/tasks`);
+    return res.data;
+  },
   getTeamTasks: async (companyId: string): Promise<TeamTask[]> => {
     const res = await api.get(`/api/admin/${companyId}/team-tasks`);
     return res.data;
@@ -58,6 +66,26 @@ export const adminService = {
     return res.data;
   },
 };
+
+export interface Policy {
+  policy_id: string;
+  filename: string;
+  signed_url: string;
+  uploaded_at?: string;
+  file_type?: string;
+}
+
+export interface EmployeeTask {
+  task_id: string;
+  title: string;
+  description?: string;
+  status: string;
+  priority?: string;
+  due_date?: string;
+  project_id?: string;
+  estimated_hours?: number;
+  created_at?: string;
+}
 
 export interface TeamTask {
   task_id: string;

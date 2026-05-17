@@ -8,11 +8,11 @@ import { Input } from '../../components/ui/Input';
 import { Badge } from '../../components/ui/Badge';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { EmptyState } from '../../components/ui/EmptyState';
-import { adminService } from '../../services/adminService';
+import { adminService, EmployeeTask } from '../../services/adminService';
 import { useAuth } from '../../lib/auth-context';
 import { Employee, Project } from '../../types';
 import toast from 'react-hot-toast';
-import { Search, Plus, Users, ClipboardList, X, Star, Trash2 } from 'lucide-react';
+import { Search, Plus, Users, ClipboardList, X, Star, Trash2, Mail, Briefcase, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
 
 // ── Assign Task Modal ─────────────────────────────────────────────────────────
 
@@ -367,6 +367,175 @@ function AwardPointsModal({ employee, companyId, onClose, onSuccess }: AwardPoin
   );
 }
 
+// ── Employee Detail Slide-Over ────────────────────────────────────────────────
+
+interface EmployeeDetailPanelProps {
+  employee: Employee;
+  companyId: string;
+  onClose: () => void;
+  onAssignTask: () => void;
+  onAwardPoints: () => void;
+}
+
+function EmployeeDetailPanel({ employee, companyId, onClose, onAssignTask, onAwardPoints }: EmployeeDetailPanelProps) {
+  const [tasks, setTasks] = useState<EmployeeTask[]>([]);
+  const [loadingTasks, setLoadingTasks] = useState(true);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [onClose]);
+
+  useEffect(() => {
+    adminService.getEmployeeTasks(companyId, employee.employee_id)
+      .then(data => setTasks(data || []))
+      .catch(() => {})
+      .finally(() => setLoadingTasks(false));
+  }, [companyId, employee.employee_id]);
+
+  const statusIcon = (status: string) => {
+    if (status === 'done') return <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />;
+    if (status === 'in_progress') return <Clock className="w-3.5 h-3.5 text-blue-500" />;
+    return <AlertCircle className="w-3.5 h-3.5 text-gray-400" />;
+  };
+
+  const priorityColor: Record<string, string> = {
+    high: 'bg-red-100 text-red-700',
+    medium: 'bg-yellow-100 text-yellow-700',
+    low: 'bg-green-100 text-green-700',
+  };
+
+  const lb = employee.leave_balance || { annual: 0, sick: 0, casual: 0 };
+
+  return (
+    <>
+      {/* Backdrop */}
+      <div className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm" onClick={onClose} />
+
+      {/* Panel */}
+      <div className="fixed inset-y-0 right-0 z-50 w-full max-w-md bg-white shadow-2xl flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-full bg-brand-100 flex items-center justify-center text-brand-700 font-bold text-lg">
+              {employee.name.charAt(0).toUpperCase()}
+            </div>
+            <div>
+              <h2 className="text-base font-bold text-gray-900">{employee.name}</h2>
+              <p className="text-xs text-gray-500">{employee.role} · {employee.department || '—'}</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors rounded-lg p-1 hover:bg-gray-100">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Scrollable body */}
+        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
+
+          {/* Contact & Info */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              <Mail className="w-4 h-4 text-gray-400" />
+              {employee.email}
+            </div>
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              <Briefcase className="w-4 h-4 text-gray-400" />
+              {employee.department || 'No department set'}
+            </div>
+          </div>
+
+          {/* Performance */}
+          <div>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Performance</p>
+            <div className="flex items-center gap-3">
+              <span className="text-2xl font-bold text-gray-900">{employee.performance_points || 0}</span>
+              <span className="text-sm text-gray-400">points</span>
+            </div>
+            <div className="mt-2 h-2 bg-gray-100 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-brand-500 rounded-full transition-all"
+                style={{ width: `${Math.min(((employee.performance_points || 0) / 100) * 100, 100)}%` }}
+              />
+            </div>
+          </div>
+
+          {/* Leave Balance */}
+          <div>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Leave Balance</p>
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                { label: 'Annual', value: lb.annual, color: 'bg-blue-50 text-blue-700' },
+                { label: 'Sick', value: lb.sick, color: 'bg-orange-50 text-orange-700' },
+                { label: 'Casual', value: lb.casual, color: 'bg-purple-50 text-purple-700' },
+              ].map(({ label, value, color }) => (
+                <div key={label} className={`rounded-xl p-3 text-center ${color}`}>
+                  <p className="text-xl font-bold">{value ?? 0}</p>
+                  <p className="text-xs font-medium mt-0.5">{label}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Tasks */}
+          <div>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+              Assigned Tasks {!loadingTasks && <span className="ml-1 font-normal text-gray-400">({tasks.length})</span>}
+            </p>
+            {loadingTasks ? (
+              <div className="py-6 flex justify-center">
+                <span className="w-5 h-5 border-2 border-brand-400 border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : tasks.length === 0 ? (
+              <p className="text-sm text-gray-400 py-4 text-center">No tasks assigned yet.</p>
+            ) : (
+              <ul className="space-y-2">
+                {tasks.map(task => (
+                  <li key={task.task_id} className="flex items-start gap-2.5 p-3 rounded-xl border border-gray-100 bg-gray-50">
+                    <span className="mt-0.5">{statusIcon(task.status)}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">{task.title}</p>
+                      <div className="flex items-center gap-2 mt-1 flex-wrap">
+                        {task.priority && (
+                          <span className={`text-xs font-semibold px-1.5 py-0.5 rounded ${priorityColor[task.priority] || 'bg-gray-100 text-gray-600'}`}>
+                            {task.priority}
+                          </span>
+                        )}
+                        {task.due_date && (
+                          <span className="text-xs text-gray-400">Due {task.due_date}</span>
+                        )}
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+
+        {/* Footer actions */}
+        <div className="border-t border-gray-200 px-6 py-4 flex gap-3">
+          <button
+            onClick={onAssignTask}
+            className="flex-1 inline-flex items-center justify-center gap-1.5 text-sm font-semibold text-brand-600 hover:text-brand-800 bg-brand-50 hover:bg-brand-100 border border-brand-200 px-4 py-2.5 rounded-xl transition-colors"
+          >
+            <ClipboardList className="w-4 h-4" />
+            Assign Task
+          </button>
+          <button
+            onClick={onAwardPoints}
+            className="flex-1 inline-flex items-center justify-center gap-1.5 text-sm font-semibold text-yellow-600 hover:text-yellow-800 bg-yellow-50 hover:bg-yellow-100 border border-yellow-200 px-4 py-2.5 rounded-xl transition-colors"
+          >
+            <Star className="w-4 h-4" />
+            Award Points
+          </button>
+        </div>
+      </div>
+    </>
+  );
+}
+
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 export default function EmployeesPage() {
@@ -379,7 +548,8 @@ export default function EmployeesPage() {
   const [formData, setFormData] = useState({ name: '', email: '', role: 'employee', department: '', password: '' });
   const [saving, setSaving] = useState(false);
 
-  // Assign task modal state
+  // Assign task / award points / detail panel state
+  const [detailEmployee, setDetailEmployee] = useState<Employee | null>(null);
   const [taskTarget, setTaskTarget] = useState<Employee | null>(null);
   const [awardTarget, setAwardTarget] = useState<Employee | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -524,7 +694,7 @@ export default function EmployeesPage() {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredEmployees.map((emp) => (
-                  <tr key={emp.employee_id} className="hover:bg-gray-50">
+                  <tr key={emp.employee_id} className="hover:bg-gray-50 cursor-pointer" onClick={() => setDetailEmployee(emp)}>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="h-10 w-10 flex-shrink-0 bg-brand-100 rounded-full flex items-center justify-center text-brand-700 font-bold">
@@ -558,7 +728,7 @@ export default function EmployeesPage() {
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                    <td className="px-6 py-4 whitespace-nowrap text-right" onClick={e => e.stopPropagation()}>
                       <div className="inline-flex items-center gap-2">
                         <button
                           onClick={() => setTaskTarget(emp)}
@@ -609,6 +779,15 @@ export default function EmployeesPage() {
           companyId={user!.companyId}
           onClose={() => setAwardTarget(null)}
           onSuccess={fetchEmployees}
+        />
+      )}
+      {detailEmployee && (
+        <EmployeeDetailPanel
+          employee={detailEmployee}
+          companyId={user!.companyId}
+          onClose={() => setDetailEmployee(null)}
+          onAssignTask={() => { setDetailEmployee(null); setTaskTarget(detailEmployee); }}
+          onAwardPoints={() => { setDetailEmployee(null); setAwardTarget(detailEmployee); }}
         />
       )}
     </AdminLayout>
